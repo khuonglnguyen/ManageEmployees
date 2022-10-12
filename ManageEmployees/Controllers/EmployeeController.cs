@@ -14,8 +14,15 @@ namespace ManageEmployees.Controllers
         }
         public IActionResult Index()
         {
+            return View();
+        }
+        public IActionResult GetAll()
+        {
             var employees = _unitOfWork.Employees.GetAll();
-            return View(employees);
+            return Json(new {
+                draw= 1,
+                recordsTotal= employees.Count(),
+                data =employees });
         }
         public IActionResult Search(string keyword)
         {
@@ -33,13 +40,16 @@ namespace ManageEmployees.Controllers
         [HttpPost]
         public IActionResult Create(Employee employee)
         {
-            if (ModelState.IsValid)
+            try
             {
                 _unitOfWork.Employees.Add(employee);
                 _unitOfWork.Complete();
-                return RedirectToAction("Index");
+                return Ok();
             }
-            return BadRequest(ModelState);
+            catch (Exception)
+            {
+                return BadRequest(ModelState);
+            }
         }
         [HttpPost]
         public IActionResult Delete(int id)
