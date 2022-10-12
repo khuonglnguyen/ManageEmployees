@@ -2,6 +2,7 @@
 using ManageEmployees.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.RegularExpressions;
 
 namespace ManageEmployees.Controllers
 {
@@ -19,10 +20,24 @@ namespace ManageEmployees.Controllers
         public IActionResult GetAll()
         {
             var employees = _unitOfWork.Employees.GetAll();
-            return Json(new {
-                draw= 1,
-                recordsTotal= employees.Count(),
-                data =employees });
+            if (User.FindFirst("role")?.Value != "admin")
+            {
+                string patternEmail = @"(?<=[\w]{1})[\w-\._\+%]*(?=[\w]{1}@)";
+                string patternPhone = @"\d(?!\d{0,3}$)";
+
+                foreach (var item in employees)
+                {
+                    item.Email = Regex.Replace(item.Email, patternEmail, m => new string('*', m.Length));
+                    item.Phone = Regex.Replace(item.Phone, patternPhone, m => new string('X', m.Length));
+                    item.Address = item.Address.Split(' ').Last();
+                }
+            }
+
+            return Json(new
+            {
+                recordsTotal = employees.Count(),
+                data = employees
+            });
         }
         public IActionResult Search(string keyword)
         {

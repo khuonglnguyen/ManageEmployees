@@ -6,39 +6,20 @@
 }
 <h1>
     Manage <b>Employees</b>
-    <button type="button" class="btn btn-success ms-4" style="float:right;" data-bs-toggle="modal" data-bs-target="#addnew"><i class="fa fa-plus-circle"></i> Add New Employee</button>
+    @{
+        if (User.FindFirst("role")?.Value == "admin")
+        {
+            <button type="button" class="btn btn-success ms-4" style="float:right;" data-bs-toggle="modal" data-bs-target="#addnew"><i class="fa fa-plus-circle"></i> Add New Employee</button>
+        }
+    }
 </h1>
 
-<table class="table" id="table">
-    <thead>
-        <tr>
-            <th>
-                Id
-            </th>
-            <th>
-                Name
-            </th>
-            <th>
-                Email
-            </th>
-            <th>
-                Address
-            </th>
-            <th>
-                Phone
-            </th>
-            <th>
-                Actions
-            </th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-            </td>
-
-        </tr>
-    </tbody>
+<table class="table" id="table" style="width:1300px;">
+    @*<thead>
+    <tr>
+    <th></th>
+    </tr>
+    </thead>*@
 </table>
 <div class="modal fade" id="addnew" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -94,41 +75,92 @@
 </div>
 <script>
     var id = 0;
-    $(document).ready(function () {
-        $('#table').DataTable({
-            processing: true,
-            serverSide: false,
-            search: true,
-            paging: true,
-            width: 1000,
-            ajax: 'Employee/GetAll',
-            columns: [
-                { data: 'id' },
-                { data: 'name' },
-                { data: 'email' },
-                { data: 'address' },
-                { data: 'phone' },
-                {
-                    data: '',
-                    render: (data, type, row) => {
-                        return `<button type="button" class="btn text-danger delete" data-bs-toggle="modal" data-id="${row.id}" data-bs-target="#remove" onclick="SetId(this)"><i class="fa fa-trash"></i></button>`;
-                    }
-                }
-            ],
-        });
 
-        document.getElementById("submit").addEventListener("click", function () {
-            var xhttp = new XMLHttpRequest();
-            xhttp.onreadystatechange = function () {
-                if (this.readyState == 4 && this.status == 200) {
-                    $.notify("Delete successfully!", "success");
-                    $('#remove').modal('hide');
-                    $('#table').DataTable().ajax.reload();
-                }
-            };
-            xhttp.open("POST", "/Employee/Delete?id=" + id, true);
-            xhttp.send();
-        });
+    $(document).ready(function () {
+    @{
+        if (User.FindFirst("role")?.Value == "admin")
+        {
+            <text>
+                    var t = $('#table').DataTable({
+                        processing: true,
+                        serverSide: false,
+                        search: true,
+                        paging: true,
+                        width: 1000,
+                        info: true,
+                        ajax: 'Employee/GetAll',
+                        columns: [
+                            { title: 'No', data: 'name' },
+                            { title: 'Name', data: 'name' },
+                            { title: 'Email', data: 'email' },
+                            { title: 'Address', data: 'address' },
+                            { title: 'Phone', data: 'phone' },
+                            {
+                                title: 'Actions',
+                                data: '',
+                                render: (data, type, row) => {
+                                    return `<button type="button" class="btn text-danger delete" data-bs-toggle="modal" data-id="${row.id}" data-bs-target="#remove" onclick="SetId(this)"><i class="fa fa-trash"></i></button>`;
+                                }
+                            }
+                        ],
+                    });
+
+                t.on('order.dt search.dt', function () {
+                    let i = 1;
+
+                    t.cells(null, 0, { search: 'applied', order: 'applied' }).every(function (cell) {
+                        this.data(i++);
+                    });
+                }).draw();
+            </text>
+        }
+        else
+        {
+            <text>
+                        var t = $('#table').DataTable({
+                        processing: true,
+                        serverSide: false,
+                        search: true,
+                        paging: true,
+                        width: 1000,
+                        info: true,
+                        ajax: 'Employee/GetAll',
+                        columns: [
+                            { title: 'No', data: 'name' },
+                            { title: 'Name', data: 'name' },
+                            { title: 'Email', data: 'email' },
+                            { title: 'Address', data: 'address' },
+                            { title: 'Phone', data: 'phone' },
+                        ],
+                        order: [[1, 'asc']],
+                    });
+
+                t.on('order.dt search.dt', function () {
+                    let i = 1;
+
+                    t.cells(null, 0, { search: 'applied', order: 'applied' }).every(function (cell) {
+                        this.data(i++);
+                    });
+                }).draw();
+            </text>
+        }
+    }
+            document.getElementById("submit").addEventListener("click", function () {
+                $.ajax({
+                    url: "/Employee/Delete?id=" + id,
+                    type: 'POST',
+                    dataType: "text",
+                    success: function (data) {
+                        $.notify("Delete successfully!", "success");
+                        $('#remove').modal('hide');
+                        $('#table').DataTable().ajax.reload();
+                    },
+                    error: function (data) {
+                        $.notify("Error, Please try again!", "error");
+                        $('#remove').modal('hide');
+                    }
+                });
+            });
 
         $("#addnew").on('submit', function (e) {
             e.preventDefault();
@@ -144,10 +176,10 @@
                 dataType: "text",
                 data: { Name: name.val(), Email: email.val(), Address: address.val(), Phone: phone.val() },
                 success: function (data) {
-                    $("#name").val('')
-                    $("#email").val('')
-                    $("#address").val('')
-                    $("#phone").val('')
+                    name.val('')
+                    email.val('')
+                    address.val('')
+                    phone.val('')
 
                     $.notify("Added successfully!", "success");
                     $('#addnew').modal('hide');
